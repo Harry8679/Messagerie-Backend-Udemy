@@ -24,6 +24,6 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(5000, () => {
-  console.log("Serveur WebSocket en écoute sur le port 5000");
+server.listen(process.env.PORT, () => {
+  console.log(`Serveur WebSocket en écoute sur le port ${process.env.PORT}`);
 });
