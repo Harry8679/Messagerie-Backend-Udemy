@@ -3,16 +3,19 @@ const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const { getFirestore, doc, setDoc, updateDoc, getDoc, collection, onSnapshot } = require("firebase-admin/firestore");
 const admin = require("firebase-admin");
-
-// Initialisation de Firebase Admin
-admin.initializeApp({
-  credential: admin.credential.applicationDefault(),
-});
-const db = getFirestore();
+const { getFirestore, doc, setDoc, updateDoc, getDoc, collection, onSnapshot } = require("firebase-admin/firestore");
 
 dotenv.config();
+
+// ✅ Initialise Firebase Admin avec la clé privée
+const serviceAccount = require("./serviceAccountKey.json");
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
+const db = getFirestore();
 const app = express();
 const server = http.createServer(app);
 
@@ -33,17 +36,16 @@ io.on("connection", async (socket) => {
     const { uid, displayName, photoURL } = userData;
     onlineUsers[uid] = { uid, displayName, photoURL, socketId: socket.id };
 
-    // Met à jour Firestore pour marquer l'utilisateur comme "en ligne"
+    // ✅ Met à jour Firestore pour marquer l'utilisateur comme "en ligne"
     await updateDoc(doc(db, "users", uid), { online: true });
 
-    // Envoie la liste des utilisateurs mis à jour
     io.emit("update_users", onlineUsers);
   });
 
   socket.on("send_message", async (message) => {
     const { senderId, receiverId, text } = message;
 
-    // Sauvegarde dans Firestore
+    // ✅ Sauvegarde le message dans Firestore
     await setDoc(doc(db, "messages", `${senderId}_${receiverId}_${Date.now()}`), {
       senderId,
       receiverId,
@@ -51,7 +53,7 @@ io.on("connection", async (socket) => {
       timestamp: new Date(),
     });
 
-    // Envoie uniquement au destinataire
+    // ✅ Envoie uniquement au destinataire
     if (onlineUsers[receiverId]) {
       io.to(onlineUsers[receiverId].socketId).emit("receive_message", message);
     }
@@ -63,10 +65,9 @@ io.on("connection", async (socket) => {
       console.log(`❌ Utilisateur déconnecté : ${user.displayName}`);
       delete onlineUsers[user.uid];
 
-      // Met à jour Firestore pour marquer l'utilisateur comme "hors ligne"
+      // ✅ Met à jour Firestore pour marquer l'utilisateur comme "hors ligne"
       await updateDoc(doc(db, "users", user.uid), { online: false });
 
-      // Envoie la mise à jour à tous les clients
       io.emit("update_users", onlineUsers);
     }
   });
