@@ -33,28 +33,17 @@ io.on("connection", async (socket) => {
 
   socket.on("user_connected", async (userData) => {
     const { uid, displayName, photoURL } = userData;
+
     onlineUsers[uid] = { uid, displayName, photoURL, socketId: socket.id };
 
     // Met à jour Firestore pour marquer l'utilisateur comme "en ligne"
-    await setDoc(doc(db, "users", uid), { name: displayName, photoURL, online: true }, { merge: true });
+    await setDoc(doc(db, "users", uid), { 
+      name: displayName, 
+      photoURL, 
+      online: true 
+    }, { merge: true });
 
-    io.emit("update_users", onlineUsers);
-  });
-
-  socket.on("send_message", async (message) => {
-    const { senderId, receiverId, text } = message;
-
-    // Sauvegarde dans Firestore
-    await setDoc(doc(db, "messages", `${senderId}_${receiverId}_${Date.now()}`), {
-      senderId,
-      receiverId,
-      text,
-      timestamp: new Date(),
-    });
-
-    if (onlineUsers[receiverId]) {
-      io.to(onlineUsers[receiverId].socketId).emit("receive_message", message);
-    }
+    io.emit("update_users", Object.values(onlineUsers));
   });
 
   socket.on("disconnect", async () => {
@@ -65,10 +54,11 @@ io.on("connection", async (socket) => {
 
       await updateDoc(doc(db, "users", user.uid), { online: false });
 
-      io.emit("update_users", onlineUsers);
+      io.emit("update_users", Object.values(onlineUsers));
     }
   });
 });
+
 
 server.listen(process.env.PORT || 6500, () => {
   console.log(`🚀 Serveur WebSocket en écoute sur le port ${process.env.PORT || 6500}`);
