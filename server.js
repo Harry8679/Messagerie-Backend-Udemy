@@ -10,7 +10,7 @@ const { getFirestore, doc, setDoc, updateDoc, getDoc, collection, onSnapshot } =
 dotenv.config();
 
 // 🔹 Initialisation de Firebase Admin
-const serviceAccount = require("./serviceAccount.json"); // Remplace par ton fichier JSON Firebase
+const serviceAccount = require("./serviceAccountKey.json"); // Remplace par ton fichier JSON Firebase
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
